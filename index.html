@@ -153,10 +153,6 @@
             cursor: grab;
             box-shadow: 0 2px 10px rgba(79, 172, 254, 0.5);
             border: 3px solid white;
-            z-index: 10;
-        }
-        #startHandle:active, #endHandle:active {
-            cursor: grabbing;
         }
     </style>
 </head>
@@ -242,13 +238,14 @@
     <script>
         // Firebase 配置（請替換為您的配置）
         const firebaseConfig = {
-            apiKey: "YOUR_API_KEY",
-            authDomain: "YOUR_AUTH_DOMAIN",
-            databaseURL: "YOUR_DATABASE_URL",
-            projectId: "YOUR_PROJECT_ID",
-            storageBucket: "YOUR_STORAGE_BUCKET",
-            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-            appId: "YOUR_APP_ID"
+            apiKey: "AIzaSyBMDeCdVo1Ek4asGX4invTVwwuG1TTywKo",
+            authDomain: "slotit-meeting-scheduler.firebaseapp.com",
+            databaseURL: "https://slotit-meeting-scheduler-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "slotit-meeting-scheduler",
+            storageBucket: "slotit-meeting-scheduler.firebasestorage.app",
+            messagingSenderId: "569499580042",
+            appId: "1:569499580042:web:17963737560bcf29b45f73",
+            measurementId: "G-DBVJR5PZH1"
         };
 
         // 初始化 Firebase
@@ -264,97 +261,76 @@
 
         function initializeSlider() {
             const slider = document.getElementById('timeSlider');
+            if (!slider) return;
+            
+            sliderWidth = slider.offsetWidth;
+            updateSliderPosition();
+            
             const startHandle = document.getElementById('startHandle');
             const endHandle = document.getElementById('endHandle');
-            const track = document.getElementById('sliderTrack');
-
-            if (!slider || !startHandle || !endHandle || !track) {
-                console.error('Slider elements not found:', { slider, startHandle, endHandle, track });
-                alert('無法初始化滑塊，請檢查頁面載入');
-                return;
-            }
-
-            sliderWidth = slider.offsetWidth;
-            if (sliderWidth === 0) {
-                console.warn('Slider width is 0, retrying initialization...');
-                setTimeout(initializeSlider, 500);
-                return;
-            }
-
-            console.log('Initializing slider with width:', sliderWidth);
-            updateSliderPosition();
-
-            // 綁定事件
-            startHandle.addEventListener('mousedown', startDrag);
-            endHandle.addEventListener('mousedown', startDrag);
-            startHandle.addEventListener('touchstart', startDrag, { passive: false });
-            endHandle.addEventListener('touchstart', startDrag, { passive: false });
-
+            
+            [startHandle, endHandle].forEach(handle => {
+                handle.addEventListener('mousedown', startDrag);
+                handle.addEventListener('touchstart', startDrag);
+            });
+            
             document.addEventListener('mousemove', drag);
-            document.addEventListener('touchmove', drag, { passive: false });
+            document.addEventListener('touchmove', drag);
             document.addEventListener('mouseup', stopDrag);
             document.addEventListener('touchend', stopDrag);
-
+            
             slider.addEventListener('click', handleSliderClick);
         }
 
         function startDrag(e) {
-            if (e.target.id !== 'startHandle' && e.target.id !== 'endHandle') return;
             isDragging = true;
             dragTarget = e.target;
             e.preventDefault();
-            console.log('Start dragging:', dragTarget.id);
         }
 
         function drag(e) {
             if (!isDragging || !dragTarget) return;
             e.preventDefault();
-
+            
             const slider = document.getElementById('timeSlider');
             const rect = slider.getBoundingClientRect();
             const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const x = Math.max(0, Math.min(clientX - rect.left, rect.width));
-            const percentage = x / rect.width;
+            const x = clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, x / rect.width));
             const hour = 6 + (percentage * 18); // 6AM to 12AM (18 hours)
-
+            
             if (dragTarget.id === 'startHandle') {
                 startTime = Math.min(hour, endTime - 1);
-            } else if (dragTarget.id === 'endHandle') {
+            } else {
                 endTime = Math.max(hour, startTime + 1);
             }
-
-            console.log('Dragging:', { startTime, endTime });
+            
             updateSliderPosition();
             updateSelectedRange();
         }
 
         function stopDrag() {
-            if (isDragging) {
-                console.log('Stop dragging');
-            }
             isDragging = false;
             dragTarget = null;
         }
 
         function handleSliderClick(e) {
             if (isDragging) return;
-
-            const slider = document.getElementById('timeSlider');
-            const rect = slider.getBoundingClientRect();
-            const x = Math.max(0, Math.min(e.clientX - rect.left, rect.width));
+            
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
             const percentage = x / rect.width;
             const hour = 6 + (percentage * 18);
-
+            
             const startDistance = Math.abs(hour - startTime);
             const endDistance = Math.abs(hour - endTime);
-
+            
             if (startDistance < endDistance) {
                 startTime = Math.min(hour, endTime - 1);
             } else {
                 endTime = Math.max(hour, startTime + 1);
             }
-
-            console.log('Slider clicked, new range:', { startTime, endTime });
+            
             updateSliderPosition();
             updateSelectedRange();
         }
@@ -363,14 +339,17 @@
             const startHandle = document.getElementById('startHandle');
             const endHandle = document.getElementById('endHandle');
             const track = document.getElementById('sliderTrack');
-
+            
             if (!startHandle || !endHandle || !track) return;
-
+            
             const startPercent = (startTime - 6) / 18;
             const endPercent = (endTime - 6) / 18;
-
+            const slider = document.getElementById('timeSlider');
+            const sliderWidth = slider.offsetWidth;
+            
             startHandle.style.left = (startPercent * sliderWidth - 10) + 'px';
             endHandle.style.left = (endPercent * sliderWidth - 10) + 'px';
+            
             track.style.left = (startPercent * sliderWidth) + 'px';
             track.style.width = ((endPercent - startPercent) * sliderWidth) + 'px';
         }
@@ -479,12 +458,14 @@
                 created: new Date().toISOString()
             };
             
+            // 儲存到 Firebase
             try {
                 await db.ref('meetings/' + meetingId).set(meeting);
                 const shareUrl = `${window.location.origin}/slotit/meeting.html?code=${meetingId}`;
                 document.getElementById('shareSection').style.display = 'block';
                 document.getElementById('shareLink').textContent = shareUrl;
                 
+                // 清空表單
                 document.getElementById('meetingTitle').value = '';
                 document.getElementById('organizerName').value = '';
                 currentMeetingSlots = [];
@@ -505,18 +486,17 @@
         }
 
         // 初始化
-        window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing slider...');
-            renderTimeSlots();
-            
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split('T')[0];
-            document.getElementById('dateSelector').value = tomorrowStr;
-            
+        renderTimeSlots();
+        
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        document.getElementById('dateSelector').value = tomorrowStr;
+        
+        setTimeout(() => {
             initializeSlider();
             updateSelectedRange();
-        });
+        }, 100);
     </script>
 </body>
 </html>

@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會議時間約定系統 - 參與會議</title>
     <style>
-        /* 與原始代碼相同的 CSS，保留參與者和結果相關樣式 */
         * {
             margin: 0;
             padding: 0;
@@ -183,6 +182,7 @@
             color: #6c757d;
             transition: all 0.2s ease;
             cursor: pointer;
+            min-width: 40px;
         }
         .time-slot-segment.selected {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -249,7 +249,26 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+
     <script>
+        // Firebase 配置（請替換為您的配置）
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 初始化 Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let participantSelections = {};
 
         function getMeetingCodeFromUrl() {
@@ -257,25 +276,39 @@
             return params.get('code')?.toUpperCase() || '';
         }
 
-        function loadMeeting() {
+        async function loadMeeting() {
             const code = getMeetingCodeFromUrl();
-            const meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
-            
-            if (!code || !meetings[code]) {
-                document.getElementById('mainContent').style.display = 'none';
-                document.getElementById('errorSection').style.display = 'block';
-                document.getElementById('meetingHeader').textContent = '無效的會議連結';
+            if (!code) {
+                showError();
                 return;
             }
             
-            const meeting = meetings[code];
-            document.getElementById('meetingHeader').textContent = meeting.title;
-            document.getElementById('meetingTitleDisplay').textContent = meeting.title;
-            document.getElementById('organizerDisplay').textContent = meeting.organizer;
-            document.getElementById('mainContent').style.display = 'block';
-            document.getElementById('errorSection').style.display = 'none';
-            
-            createParticipantSliders(meeting.slots);
+            try {
+                const snapshot = await db.ref('meetings/' + code).once('value');
+                const meeting = snapshot.val();
+                
+                if (!meeting) {
+                    showError();
+                    return;
+                }
+                
+                document.getElementById('meetingHeader').textContent = meeting.title;
+                document.getElementById('meetingTitleDisplay').textContent = meeting.title;
+                document.getElementById('organizerDisplay').textContent = meeting.organizer;
+                document.getElementById('mainContent').style.display = 'block';
+                document.getElementById('errorSection').style.display = 'none';
+                
+                createParticipantSliders(meeting.slots);
+            } catch (error) {
+                console.error('Error loading meeting:', error);
+                showError();
+            }
+        }
+
+        function showError() {
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('meetingHeader').textContent = '無效的會議連結';
         }
 
         function showTab(tabName) {
@@ -296,12 +329,22 @@
             }
         }
 
-        function resetParticipantInterface() {
+        async function resetParticipantInterface() {
             participantSelections = {};
             const container = document.getElementById('participantTimeSlots');
             container.innerHTML = '';
             document.getElementById('participantName').value = '';
-            createParticipantSliders(JSON.parse(localStorage.getItem('meetings') || '{}')[getMeetingCodeFromUrl()].slots);
+            
+            const code = getMeetingCodeFromUrl();
+            try {
+                const snapshot = await db.ref('meetings/' + code).once('value');
+                const meeting = snapshot.val();
+                if (meeting) {
+                    createParticipantSliders(meeting.slots);
+                }
+            } catch (error) {
+                console.error('Error resetting interface:', error);
+            }
         }
 
         function createParticipantSliders(slots) {
@@ -359,7 +402,8 @@
                                         font-weight: 600;
                                         color: #6c757d;
                                         transition: all 0.2s ease;
-                                        cursor: pointer;">
+                                        cursor: pointer;
+                                        min-width: 40px;">
                                 ${String(slot.hour).padStart(2, '0')}:00
                             </div>
                         `).join('')}
@@ -397,7 +441,7 @@
             }
         }
 
-        function submitAvailability() {
+        async function submitAvailability() {
             const name = document.getElementById('participantName').value.trim();
             const code = getMeetingCodeFromUrl();
             
@@ -412,70 +456,83 @@
                 return;
             }
             
-            let meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
-            const meeting = meetings[code];
-            if (!meeting) {
-                alert('會議不存在');
-                return;
-            }
-            
-            selectedSlots.forEach(slotId => {
-                const slot = meeting.slots.find(s => s.id === slotId);
-                if (slot) {
-                    slot.votes = slot.votes.filter(vote => vote !== name);
-                    slot.votes.push(name);
+            try {
+                const snapshot = await db.ref('meetings/' + code).once('value');
+                let meeting = snapshot.val();
+                if (!meeting) {
+                    alert('會議不存在');
+                    return;
                 }
-            });
-            
-            meetings[code] = meeting;
-            localStorage.setItem('meetings', JSON.stringify(meetings));
-            
-            alert('提交成功！感謝您的參與。');
-            resetParticipantInterface();
+                
+                selectedSlots.forEach(slotId => {
+                    const slot = meeting.slots.find(s => s.id === slotId);
+                    if (slot) {
+                        slot.votes = slot.votes.filter(vote => vote !== name);
+                        slot.votes.push(name);
+                    }
+                });
+                
+                await db.ref('meetings/' + code).set(meeting);
+                
+                alert('提交成功！感謝您的參與。');
+                resetParticipantInterface();
+            } catch (error) {
+                console.error('Error submitting availability:', error);
+                alert('提交失敗，請稍後重試。');
+            }
         }
 
-        function loadResults() {
+        async function loadResults() {
             const code = getMeetingCodeFromUrl();
-            const meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
-            const meeting = meetings[code];
-            
-            if (!meeting) {
-                document.getElementById('resultsDisplay').innerHTML = `
-                    <div class="alert alert-danger">
-                        找不到該會議
+            try {
+                const snapshot = await db.ref('meetings/' + code).once('value');
+                const meeting = snapshot.val();
+                
+                if (!meeting) {
+                    document.getElementById('resultsDisplay').innerHTML = `
+                        <div class="alert alert-danger">
+                            找不到該會議
+                        </div>
+                    `;
+                    return;
+                }
+                
+                const sortedSlots = [...meeting.slots].sort((a, b) => b.votes.length - a.votes.length);
+                const maxVotes = sortedSlots[0]?.votes.length || 0;
+                
+                const resultsHTML = `
+                    <div class="alert alert-info">
+                        <strong>${meeting.title}</strong><br>
+                        發起人：${meeting.organizer}<br>
+                        總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes)).size} 人
+                    </div>
+                    
+                    <div class="results">
+                        ${sortedSlots.map(slot => `
+                            <div class="result-item ${slot.votes.length === maxVotes && maxVotes > 0 ? 'best-time' : ''}">
+                                <div class="result-header">
+                                    <div class="result-time">
+                                        ${slot.votes.length === maxVotes && maxVotes > 0 ? '🏆 ' : ''}${slot.text}
+                                    </div>
+                                    <div class="result-count">${slot.votes.length} 人可參加</div>
+                                </div>
+                                <div class="result-names">
+                                    ${slot.votes.length > 0 ? `參與者：${slot.votes.join(', ')}` : '暫無人選擇此時段'}
+                                </div>
+                            </div>
+                        `).join('')}
                     </div>
                 `;
-                return;
-            }
-            
-            const sortedSlots = [...meeting.slots].sort((a, b) => b.votes.length - a.votes.length);
-            const maxVotes = sortedSlots[0]?.votes.length || 0;
-            
-            const resultsHTML = `
-                <div class="alert alert-info">
-                    <strong>${meeting.title}</strong><br>
-                    發起人：${meeting.organizer}<br>
-                    總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes)).size} 人
-                </div>
                 
-                <div class="results">
-                    ${sortedSlots.map(slot => `
-                        <div class="result-item ${slot.votes.length === maxVotes && maxVotes > 0 ? 'best-time' : ''}">
-                            <div class="result-header">
-                                <div class="result-time">
-                                    ${slot.votes.length === maxVotes && maxVotes > 0 ? '🏆 ' : ''}${slot.text}
-                                </div>
-                                <div class="result-count">${slot.votes.length} 人可參加</div>
-                            </div>
-                            <div class="result-names">
-                                ${slot.votes.length > 0 ? `參與者：${slot.votes.join(', ')}` : '暫無人選擇此時段'}
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-            document.getElementById('resultsDisplay').innerHTML = resultsHTML;
+                document.getElementById('resultsDisplay').innerHTML = resultsHTML;
+            } catch (error) {
+                console.error('Error loading results:', error);
+                document.getElementById('resultsDisplay').innerHTML = `
+                    <div class="alert alert-danger">
+                        載入結果失敗，請稍後重試
+                    </div>
+                `;
+            }
         }
 
         // 初始化

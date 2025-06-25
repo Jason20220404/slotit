@@ -228,6 +228,42 @@
             document.getElementById('errorSection').querySelector('p').textContent = message;
         }
 
+        function loadMeeting() {
+            console.log('Starting loadMeeting...');
+            const code = getMeetingCodeFromUrl();
+            console.log('Meeting code from URL:', code);
+            if (!code) {
+                console.log('No meeting code found in URL');
+                showError('無效的會議連結：缺少代碼');
+                return;
+            }
+            if (!db) {
+                console.log('Firebase db not initialized');
+                showError('Firebase 未初始化，請檢查網路連線');
+                return;
+            }
+            console.log('Fetching meeting from Firebase:', `/meetings/${code}`);
+            db.ref('meetings/' + code).once('value').then(snapshot => {
+                const meeting = snapshot.val();
+                console.log('Meeting data:', meeting);
+                if (!meeting) {
+                    console.log('No meeting found for code:', code);
+                    showError('會議不存在，請確認連結正確');
+                    return;
+                }
+                document.getElementById('meetingHeader').textContent = meeting.title;
+                document.getElementById('meetingTitleDisplay').textContent = meeting.title;
+                document.getElementById('organizerDisplay').textContent = meeting.organizer;
+                document.getElementById('mainContent').style.display = 'block';
+                document.getElementById('errorSection').style.display = 'none';
+                console.log('Creating participant sliders for slots:', meeting.slots);
+                createParticipantSliders(meeting.slots);
+            }).catch(error => {
+                console.error('Error loading meeting:', error);
+                showError('載入會議失敗：' + error.message);
+            });
+        }
+
         function createParticipantSliders(slots) {
             const container = document.getElementById('timeSlots');
             container.innerHTML = '';

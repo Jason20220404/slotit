@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>會議時間約定系統 - 發起會議</title>
     <style>
-        /* 與原始代碼相同的 CSS，僅保留與發起會議相關的部分 */
         * {
             margin: 0;
             padding: 0;
@@ -108,7 +107,7 @@
             margin: 20px 0;
             text-align: center;
         }
- insisting  .link-display {
+        .link-display {
             background: white;
             border: 1px solid #e9ecef;
             border-radius: 5px;
@@ -232,7 +231,26 @@
         </div>
     </div>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+
     <script>
+        // Firebase 配置（請替換為您的配置）
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_AUTH_DOMAIN",
+            databaseURL: "YOUR_DATABASE_URL",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_STORAGE_BUCKET",
+            messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        // 初始化 Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
         let currentMeetingSlots = [];
         let isDragging = false;
         let dragTarget = null;
@@ -415,7 +433,7 @@
             renderTimeSlots();
         }
 
-        function createMeeting() {
+        async function createMeeting() {
             const title = document.getElementById('meetingTitle').value;
             const organizer = document.getElementById('organizerName').value;
             
@@ -439,23 +457,24 @@
                 created: new Date().toISOString()
             };
             
-            // 儲存到 localStorage
-            let meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
-            meetings[meetingId] = meeting;
-            localStorage.setItem('meetings', JSON.stringify(meetings));
-            
-            // 顯示分享區塊
-            const shareUrl = `${window.location.origin}/meeting.html?code=${meetingId}`;
-            document.getElementById('shareSection').style.display = 'block';
-            document.getElementById('shareLink').textContent = shareUrl;
-            
-            // 清空表單
-            document.getElementById('meetingTitle').value = '';
-            document.getElementById('organizerName').value = '';
-            currentMeetingSlots = [];
-            renderTimeSlots();
-            
-            alert('會議約定建立成功！請分享連結給其他人。');
+            // 儲存到 Firebase
+            try {
+                await db.ref('meetings/' + meetingId).set(meeting);
+                const shareUrl = `${window.location.origin}/slotit/meeting.html?code=${meetingId}`;
+                document.getElementById('shareSection').style.display = 'block';
+                document.getElementById('shareLink').textContent = shareUrl;
+                
+                // 清空表單
+                document.getElementById('meetingTitle').value = '';
+                document.getElementById('organizerName').value = '';
+                currentMeetingSlots = [];
+                renderTimeSlots();
+                
+                alert('會議約定建立成功！請分享連結給其他人。');
+            } catch (error) {
+                console.error('Error saving meeting:', error);
+                alert('儲存會議失敗，請稍後重試。');
+            }
         }
 
         function copyLink() {

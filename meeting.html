@@ -243,7 +243,7 @@
         <div id="errorSection" style="display: none; padding: 30px;">
             <div class="alert alert-danger">
                 <strong>錯誤</strong><br>
-                找不到該會議，請確認連結是否正確。
+                <p>找不到該會議，請確認連結是否正確。</p>
             </div>
         </div>
     </div>
@@ -347,12 +347,15 @@
             participantSelections = {};
             const code = getMeetingCodeFromUrl();
             if (!db) {
+                console.log('Firebase db not initialized');
                 showError('Firebase 未初始化，請檢查網路連線');
                 return;
             }
             db.ref('meetings/' + code).once('value').then(snapshot => {
                 const meeting = snapshot.val();
+                console.log('Meeting data for reset:', meeting);
                 if (!meeting) {
+                    console.log('Meeting not found for code:', code);
                     showError('會議不存在，請確認連結正確');
                     return;
                 }
@@ -446,7 +449,7 @@
         function toggleSlotSelection(element, slotId) {
             if (element.classList.contains('selected')) {
                 element.classList.remove('selected');
-                element.style.background = '#f8f9fa';
+                element.style.background = '';
                 element.style.borderColor = '#dee2e6';
                 element.style.color = '#6c757d';
                 delete participantSelections[slotId];
@@ -463,12 +466,15 @@
             const name = document.getElementById('participantName').value.trim();
             const code = getMeetingCodeFromUrl();
             
+            console.log('Submitting availability for:', { name, code });
+            
             if (!name) {
                 alert('請輸入您的姓名');
                 return;
             }
             
             if (!db) {
+                console.log('Firebase db not initialized');
                 alert('Firebase 未初始化，請檢查網路連線');
                 return;
             }
@@ -480,9 +486,22 @@
             }
             
             try {
+                // 確認會議存在
+                const snapshot = await db.ref('meetings/' + code).once('value');
+                const meeting = snapshot.val();
+                console.log('Meeting data for submission:', meeting);
+                if (!meeting) {
+                    console.log('Meeting not found for code:', code);
+                    alert('會議不存在，請確認連結正確');
+                    return;
+                }
+                
                 const participantId = 'PART' + Math.random().toString(36).substr(2, 6).toUpperCase();
                 await db.ref(`meetings/${code}/slots`).transaction(slotsData => {
-                    if (!slotsData) return slotsData;
+                    if (!slotsData) {
+                        console.log('No slots data found');
+                        return slotsData;
+                    }
                     selectedSlots.forEach(slotId => {
                         const targetSlot = slotsData.find(s => s.id === slotId);
                         if (targetSlot) {
@@ -493,7 +512,7 @@
                     return slotsData;
                 });
                 
-                console.log('Availability submitted for:', name, selectedSlots);
+                console.log('Availability submitted successfully:', { name, selectedSlots });
                 alert('提交成功！感謝您的參與。');
                 showTab('results');
             } catch (error) {
@@ -504,7 +523,10 @@
 
         function loadResults() {
             const code = getMeetingCodeFromUrl();
+            console.log('Loading results for code:', code);
+            
             if (!db) {
+                console.log('Firebase db not initialized');
                 showError('Firebase 未初始化，請檢查網路連線');
                 return;
             }
@@ -513,9 +535,10 @@
                 const meeting = snapshot.val();
                 console.log('Results data:', meeting);
                 if (!meeting) {
+                    console.log('Meeting not found for code:', code);
                     document.getElementById('resultsDisplay').innerHTML = `
                         <div class="alert alert-danger">
-                            找不到該會議
+                            找不到該會議，請確認連結正確
                         </div>
                     `;
                     return;
@@ -528,7 +551,7 @@
                     <div class="alert alert-info">
                         <strong>${meeting.title}</strong><br>
                         發起人：${meeting.organizer}<br>
-                        總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes.map(v => v.name))).size} 人
+                        總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes?.map(v => v.name) || [])).size} 人
                     </div>
                     
                     <div class="results">
@@ -551,7 +574,11 @@
                 document.getElementById('resultsDisplay').innerHTML = resultsHTML;
             }).catch(error => {
                 console.error('Error loading results:', error);
-                showError('載入結果失敗：' + error.message);
+                document.getElementById('resultsDisplay').innerHTML = `
+                    <div class="alert alert-danger">
+                        載入結果失敗：${error.message}
+                    </div>
+                `;
             });
         }
 

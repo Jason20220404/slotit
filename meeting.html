@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會議時間約定系統 - 參與會議</title>
+    <style>
+        /* 與原始代碼相同的 CSS，保留參與者和結果相關樣式 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            border-bottom: 3px solid #4facfe;
+        }
+        .tab:hover {
+            background: #e9ecef;
+        }
+        .tab.active:hover {
+            background: white;
+        }
+        .content {
+            padding: 30px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+            color: #0c5460;
+        }
+        .alert-danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
+        }
+        .results {
+            margin-top: 30px;
+        }
+        .result-item {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .result-time {
+            font-size: 18px;
+            font-weight: 600;
+            color: #333;
+        }
+        .result-count {
+            background: #4facfe;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .result-names {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .best-time {
+            border: 3px solid #28a745;
+            background: #f8fff9;
+        }
+        .best-time .result-count {
+            background: #28a745;
+        }
+        .time-slot-segment {
+            position: absolute;
+            height: 100%;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .time-slot-segment.selected {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-color: #4facfe;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗓️ 會議時間約定系統 - 參與會議</h1>
+            <p id="meetingHeader">載入會議中...</p>
+        </div>
+        
+        <div id="mainContent" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('participant')">✅ 填寫空檔</button>
+                <button class="tab" onclick="showTab('results')">📊 查看結果</button>
+            </div>
+            
+            <div class="content">
+                <!-- 參與者介面 -->
+                <div id="participant" class="tab-content active">
+                    <h2>填寫您的可用時段</h2>
+                    
+                    <div class="form-group">
+                        <label for="participantName">您的姓名</label>
+                        <input type="text" id="participantName" placeholder="請輸入您的姓名">
+                    </div>
+                    
+                    <div id="meetingInfo">
+                        <div class="alert alert-info">
+                            <strong id="meetingTitleDisplay"></strong><br>
+                            發起人：<span id="organizerDisplay"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>請選擇您可以參加的時段：</label>
+                            <div id="participantSlider" style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin: 15px 0;">
+                                <div id="participantTimeSlots"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" onclick="submitAvailability()" style="width: 100%; margin-top: 20px;">
+                            ✅ 提交我的空檔時間
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 結果檢視介面 -->
+                <div id="results" class="tab-content">
+                    <h2>會議時段統計結果</h2>
+                    <div id="resultsDisplay"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="errorSection" style="display: none; padding: 30px;">
+            <div class="alert alert-danger">
+                <strong>錯誤</strong><br>
+                找不到該會議，請確認連結是否正確。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let participantSelections = {};
+
+        function getMeetingCodeFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('code')?.toUpperCase() || '';
+        }
+
+        function loadMeeting() {
+            const code = getMeetingCodeFromUrl();
+            const meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
+            
+            if (!code || !meetings[code]) {
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('errorSection').style.display = 'block';
+                document.getElementById('meetingHeader').textContent = '無效的會議連結';
+                return;
+            }
+            
+            const meeting = meetings[code];
+            document.getElementById('meetingHeader').textContent = meeting.title;
+            document.getElementById('meetingTitleDisplay').textContent = meeting.title;
+            document.getElementById('organizerDisplay').textContent = meeting.organizer;
+            document.getElementById('mainContent').style.display = 'block';
+            document.getElementById('errorSection').style.display = 'none';
+            
+            createParticipantSliders(meeting.slots);
+        }
+
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (tabName === 'participant') {
+                resetParticipantInterface();
+            } else if (tabName === 'results') {
+                loadResults();
+            }
+        }
+
+        function resetParticipantInterface() {
+            participantSelections = {};
+            const container = document.getElementById('participantTimeSlots');
+            container.innerHTML = '';
+            document.getElementById('participantName').value = '';
+            createParticipantSliders(JSON.parse(localStorage.getItem('meetings') || '{}')[getMeetingCodeFromUrl()].slots);
+        }
+
+        function createParticipantSliders(slots) {
+            const slotsByDate = {};
+            slots.forEach(slot => {
+                const date = new Date(slot.datetime);
+                const dateKey = date.toISOString().split('T')[0];
+                if (!slotsByDate[dateKey]) {
+                    slotsByDate[dateKey] = [];
+                }
+                slotsByDate[dateKey].push({
+                    ...slot,
+                    hour: date.getHours()
+                });
+            });
+            
+            const container = document.getElementById('participantTimeSlots');
+            const newContainer = container.cloneNode(false);
+            container.parentNode.replaceChild(newContainer, container);
+            
+            newContainer.innerHTML = '';
+            
+            Object.keys(slotsByDate).sort().forEach(dateKey => {
+                const date = new Date(dateKey);
+                const dateStr = date.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    weekday: 'long'
+                });
+                
+                const daySlots = slotsByDate[dateKey].sort((a, b) => a.hour - b.hour);
+                const minHour = Math.min(...daySlots.map(s => s.hour));
+                const maxHour = Math.max(...daySlots.map(s => s.hour)) + 1;
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.style.marginBottom = '25px';
+                dayDiv.innerHTML = `
+                    <h4 style="margin-bottom: 15px; color: #333;">${dateStr}</h4>
+                    <div class="participant-day-slider" data-date="${dateKey}" style="position: relative; height: 40px; background: #e9ecef; border-radius: 10px; margin: 15px 0; cursor: pointer;">
+                        ${daySlots.map(slot => `
+                            <div class="time-slot-segment" 
+                                 data-slot-id="${slot.id}"
+                                 style="position: absolute; 
+                                        left: ${((slot.hour - minHour) / (maxHour - minHour)) * 100}%; 
+                                        width: ${(1 / (maxHour - minHour)) * 100}%; 
+                                        height: 100%; 
+                                        background: #f8f9fa; 
+                                        border: 2px solid #dee2e6; 
+                                        border-radius: 5px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                        color: #6c757d;
+                                        transition: all 0.2s ease;
+                                        cursor: pointer;">
+                                ${String(slot.hour).padStart(2, '0')}:00
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6c757d; margin-top: 5px;">
+                        <span>${String(minHour).padStart(2, '0')}:00</span>
+                        <span>${String(maxHour).padStart(2, '0')}:00</span>
+                    </div>
+                `;
+                
+                newContainer.appendChild(dayDiv);
+            });
+            
+            newContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('time-slot-segment')) {
+                    const slotId = e.target.dataset.slotId;
+                    toggleSlotSelection(e.target, slotId);
+                }
+            });
+        }
+
+        function toggleSlotSelection(element, slotId) {
+            if (element.classList.contains('selected')) {
+                element.classList.remove('selected');
+                element.style.background = '#f8f9fa';
+                element.style.borderColor = '#dee2e6';
+                element.style.color = '#6c757d';
+                delete participantSelections[slotId];
+            } else {
+                element.classList.add('selected');
+                element.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+                element.style.borderColor = '#4facfe';
+                element.style.color = 'white';
+                participantSelections[slotId] = true;
+            }
+        }
+
+        function submitAvailability() {
+            const name = document.getElementById('participantName').value.trim();
+            const code = getMeetingCodeFromUrl();
+            
+            if (!name) {
+                alert('請輸入您的姓名');
+                return;
+            }
+            
+            const selectedSlots = Object.keys(participantSelections);
+            if (selectedSlots.length === 0) {
+                alert('請至少選擇一個可用時段');
+                return;
+            }
+            
+            let meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
+            const meeting = meetings[code];
+            if (!meeting) {
+                alert('會議不存在');
+                return;
+            }
+            
+            selectedSlots.forEach(slotId => {
+                const slot = meeting.slots.find(s => s.id === slotId);
+                if (slot) {
+                    slot.votes = slot.votes.filter(vote => vote !== name);
+                    slot.votes.push(name);
+                }
+            });
+            
+            meetings[code] = meeting;
+            localStorage.setItem('meetings', JSON.stringify(meetings));
+            
+            alert('提交成功！感謝您的參與。');
+            resetParticipantInterface();
+        }
+
+        function loadResults() {
+            const code = getMeetingCodeFromUrl();
+            const meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
+            const meeting = meetings[code];
+            
+            if (!meeting) {
+                document.getElementById('resultsDisplay').innerHTML = `
+                    <div class="alert alert-danger">
+                        找不到該會議
+                    </div>
+                `;
+                return;
+            }
+            
+            const sortedSlots = [...meeting.slots].sort((a, b) => b.votes.length - a.votes.length);
+            const maxVotes = sortedSlots[0]?.votes.length || 0;
+            
+            const resultsHTML = `
+                <div class="alert alert-info">
+                    <strong>${meeting.title}</strong><br>
+                    發起人：${meeting.organizer}<br>
+                    總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes)).size} 人
+                </div>
+                
+                <div class="results">
+                    ${sortedSlots.map(slot => `
+                        <div class="result-item ${slot.votes.length === maxVotes && maxVotes > 0 ? 'best-time' : ''}">
+                            <div class="result-header">
+                                <div class="result-time">
+                                    ${slot.votes.length === maxVotes && maxVotes > 0 ? '🏆 ' : ''}${slot.text}
+                                </div>
+                                <div class="result-count">${slot.votes.length} 人可參加</div>
+                            </div>
+                            <div class="result-names">
+                                ${slot.votes.length > 0 ? `參與者：${slot.votes.join(', ')}` : '暫無人選擇此時段'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            document.getElementById('resultsDisplay').innerHTML = resultsHTML;
+        }
+
+        // 初始化
+        loadMeeting();
+    </script>
+</body>
+</html>

@@ -245,11 +245,14 @@
         </div>
     </div>
 
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database.js"></script>
+    <!-- Firebase SDK (UMD 版本) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
+        // 確保變數在頂部初始化
+        let currentMeetingSlots = [];
+
         // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyBMDeCdVo1Ek4asGX4invTVwwuG1TTywKo",
@@ -263,11 +266,15 @@
         };
 
         // 初始化 Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const db = firebase.database();
-        console.log('Firebase initialized successfully:', app.name);
-
-        let currentMeetingSlots = [];
+        let app, db;
+        try {
+            app = firebase.initializeApp(firebaseConfig);
+            db = firebase.database();
+            console.log('Firebase initialized successfully:', app.name);
+        } catch (error) {
+            console.error('Firebase initialization failed:', error);
+            alert('Firebase 初始化失敗，請檢查配置或網路連線');
+        }
 
         function updateSelectedRange() {
             const startTime = parseInt(document.getElementById('startTime').value);
@@ -382,6 +389,7 @@
             };
             
             try {
+                if (!db) throw new Error('Firebase database not initialized');
                 await db.ref('meetings/' + meetingId).set(meeting);
                 const shareUrl = `${window.location.origin}/slotit/meeting.html?code=${meetingId}`;
                 document.getElementById('shareSection').style.display = 'block';
@@ -395,7 +403,7 @@
                 alert('會議約定建立成功！請分享連結給其他人。');
             } catch (error) {
                 console.error('Error saving meeting:', error);
-                alert('儲存會議失敗，請稍後重試。');
+                alert('儲存會議失敗，請檢查 Firebase 配置或網路連線');
             }
         }
 
@@ -403,6 +411,9 @@
             const shareUrl = document.getElementById('shareLink').textContent;
             navigator.clipboard.writeText(shareUrl).then(() => {
                 alert('連結已複製到剪貼簿！');
+            }).catch(err => {
+                console.error('Failed to copy link:', err);
+                alert('複製連結失敗，請手動複製');
             });
         }
 
@@ -417,9 +428,16 @@
             document.getElementById('dateSelector').value = tomorrowStr;
             
             // 綁定時間選擇器事件
-            document.getElementById('startTime').addEventListener('change', updateSelectedRange);
-            document.getElementById('endTime').addEventListener('change', updateSelectedRange);
-            updateSelectedRange();
+            const startTimeSelect = document.getElementById('startTime');
+            const endTimeSelect = document.getElementById('endTime');
+            if (startTimeSelect && endTimeSelect) {
+                startTimeSelect.addEventListener('change', updateSelectedRange);
+                endTimeSelect.addEventListener('change', updateSelectedRange);
+                updateSelectedRange();
+            } else {
+                console.error('Time selector elements not found');
+                alert('時間選擇器載入失敗，請重新整理頁面');
+            }
         });
     </script>
 </body>

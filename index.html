@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>會議時間約定系統 - 發起會議</title>
+    <style>
+        /* 與原始代碼相同的 CSS，僅保留與發起會議相關的部分 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+        .header {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .content {
+            padding: 30px;
+        }
+        .form-group {
+            margin-bottom: 25px;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+        }
+        .time-slots {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+        .time-slot {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        .time-slot:hover {
+            background: #e9ecef;
+        }
+        .btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s ease;
+            margin: 5px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
+        }
+        .btn-danger {
+            background: #dc3545;
+        }
+        .share-link {
+            background: #f8f9fa;
+            border: 2px dashed #4facfe;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+ insisting  .link-display {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            word-break: break-all;
+        }
+        .alert {
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
+        }
+        .alert-success {
+            background: #d4edda;
+            border-left-color: #28a745;
+            color: #155724;
+        }
+        #timeSlider {
+            position: relative;
+            height: 60px;
+            background: linear-gradient(to right, #e9ecef 0%, #e9ecef 100%);
+            border-radius: 10px;
+            margin: 20px 0;
+            cursor: pointer;
+        }
+        #sliderTrack {
+            position: absolute;
+            top: 0;
+            height: 100%;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 10px;
+            opacity: 0.8;
+        }
+        #startHandle, #endHandle {
+            position: absolute;
+            top: -5px;
+            width: 20px;
+            height: 70px;
+            background: #4facfe;
+            border-radius: 10px;
+            cursor: grab;
+            box-shadow: 0 2px 10px rgba(79, 172, 254, 0.5);
+            border: 3px solid white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🗓️ 會議時間約定系統 - 發起會議</h1>
+            <p>輕鬆創建會議並分享給參與者</p>
+        </div>
+        
+        <div class="content">
+            <h2>建立新的會議約定</h2>
+            
+            <div class="form-group">
+                <label for="meetingTitle">會議主題</label>
+                <input type="text" id="meetingTitle" placeholder="例如：週會討論">
+            </div>
+            
+            <div class="form-group">
+                <label for="organizerName">發起人姓名</label>
+                <input type="text" id="organizerName" placeholder="您的姓名">
+            </div>
+            
+            <div class="form-group">
+                <label>📅 選擇日期與時段</label>
+                
+                <div style="margin-bottom: 20px;">
+                    <label for="dateSelector" style="font-size: 14px; margin-bottom: 5px;">選擇日期：</label>
+                    <input type="date" id="dateSelector" style="width: 200px; margin-bottom: 15px;">
+                </div>
+                
+                <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <span style="font-weight: 600;">⏰ 拖拽選擇時段範圍</span>
+                        <span style="font-size: 14px; color: #6c757d;">選中時段：<span id="selectedRange">尚未選擇</span></span>
+                    </div>
+                    
+                    <div id="timeSlider">
+                        <div id="sliderTrack"></div>
+                        <div id="startHandle"></div>
+                        <div id="endHandle"></div>
+                    </div>
+                    
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6c757d; margin-bottom: 20px;">
+                        <span>06:00</span>
+                        <span>12:00</span>
+                        <span>18:00</span>
+                        <span>24:00</span>
+                    </div>
+                    
+                    <div style="text-align: center;">
+                        <button class="btn" onclick="addSelectedRange()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
+                            ➕ 新增選中的時段
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="timeSlotsList"></div>
+            
+            <button class="btn" onclick="createMeeting()" style="width: 100%; margin-top: 20px;">
+                🚀 建立會議約定
+            </button>
+            
+            <div id="shareSection" style="display: none;">
+                <div class="alert alert-success">
+                    <strong>✅ 會議約定建立成功！</strong><br>
+                    請將下方連結分享給其他參與者：
+                </div>
+                <div class="share-link">
+                    <p><strong>分享連結：</strong></p>
+                    <div class="link-display" id="shareLink"></div>
+                    <button class="btn" onclick="copyLink()">📋 複製連結</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentMeetingSlots = [];
+        let isDragging = false;
+        let dragTarget = null;
+        let sliderWidth = 0;
+        let startTime = 6; // 6:00 AM
+        let endTime = 8; // 8:00 AM (default 2 hour range)
+
+        function initializeSlider() {
+            const slider = document.getElementById('timeSlider');
+            if (!slider) return;
+            
+            sliderWidth = slider.offsetWidth;
+            updateSliderPosition();
+            
+            const startHandle = document.getElementById('startHandle');
+            const endHandle = document.getElementById('endHandle');
+            
+            [startHandle, endHandle].forEach(handle => {
+                handle.addEventListener('mousedown', startDrag);
+                handle.addEventListener('touchstart', startDrag);
+            });
+            
+            document.addEventListener('mousemove', drag);
+            document.addEventListener('touchmove', drag);
+            document.addEventListener('mouseup', stopDrag);
+            document.addEventListener('touchend', stopDrag);
+            
+            slider.addEventListener('click', handleSliderClick);
+        }
+
+        function startDrag(e) {
+            isDragging = true;
+            dragTarget = e.target;
+            e.preventDefault();
+        }
+
+        function drag(e) {
+            if (!isDragging || !dragTarget) return;
+            e.preventDefault();
+            
+            const slider = document.getElementById('timeSlider');
+            const rect = slider.getBoundingClientRect();
+            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+            const x = clientX - rect.left;
+            const percentage = Math.max(0, Math.min(1, x / rect.width));
+            const hour = 6 + (percentage * 18); // 6AM to 12AM (18 hours)
+            
+            if (dragTarget.id === 'startHandle') {
+                startTime = Math.min(hour, endTime - 1);
+            } else {
+                endTime = Math.max(hour, startTime + 1);
+            }
+            
+            updateSliderPosition();
+            updateSelectedRange();
+        }
+
+        function stopDrag() {
+            isDragging = false;
+            dragTarget = null;
+        }
+
+        function handleSliderClick(e) {
+            if (isDragging) return;
+            
+            const rect = e.target.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percentage = x / rect.width;
+            const hour = 6 + (percentage * 18);
+            
+            const startDistance = Math.abs(hour - startTime);
+            const endDistance = Math.abs(hour - endTime);
+            
+            if (startDistance < endDistance) {
+                startTime = Math.min(hour, endTime - 1);
+            } else {
+                endTime = Math.max(hour, startTime + 1);
+            }
+            
+            updateSliderPosition();
+            updateSelectedRange();
+        }
+
+        function updateSliderPosition() {
+            const startHandle = document.getElementById('startHandle');
+            const endHandle = document.getElementById('endHandle');
+            const track = document.getElementById('sliderTrack');
+            
+            if (!startHandle || !endHandle || !track) return;
+            
+            const startPercent = (startTime - 6) / 18;
+            const endPercent = (endTime - 6) / 18;
+            const slider = document.getElementById('timeSlider');
+            const sliderWidth = slider.offsetWidth;
+            
+            startHandle.style.left = (startPercent * sliderWidth - 10) + 'px';
+            endHandle.style.left = (endPercent * sliderWidth - 10) + 'px';
+            
+            track.style.left = (startPercent * sliderWidth) + 'px';
+            track.style.width = ((endPercent - startPercent) * sliderWidth) + 'px';
+        }
+
+        function updateSelectedRange() {
+            const startHour = Math.floor(startTime);
+            const endHour = Math.ceil(endTime);
+            const startStr = String(startHour).padStart(2, '0') + ':00';
+            const endStr = String(endHour).padStart(2, '0') + ':00';
+            
+            document.getElementById('selectedRange').textContent = `${startStr} - ${endStr}`;
+        }
+
+        function addSelectedRange() {
+            const date = document.getElementById('dateSelector').value;
+            
+            if (!date) {
+                alert('請選擇日期');
+                return;
+            }
+            
+            const startHour = Math.floor(startTime);
+            const endHour = Math.ceil(endTime);
+            
+            let addedCount = 0;
+            
+            for (let hour = startHour; hour < endHour; hour++) {
+                const dateTime = new Date(date + 'T' + String(hour).padStart(2, '0') + ':00:00');
+                const dateStr = dateTime.toLocaleDateString('zh-TW', {
+                    month: 'numeric',
+                    day: 'numeric',
+                    weekday: 'short'
+                });
+                const timeStr = dateTime.toLocaleTimeString('zh-TW', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: false
+                });
+                
+                const slotText = `${dateStr} ${timeStr}`;
+                const slotId = dateTime.getTime().toString();
+                
+                const exists = currentMeetingSlots.some(slot => slot.datetime === dateTime.toISOString());
+                if (!exists) {
+                    currentMeetingSlots.push({
+                        id: slotId,
+                        text: slotText,
+                        datetime: dateTime.toISOString(),
+                        votes: []
+                    });
+                    addedCount++;
+                }
+            }
+            
+            if (addedCount > 0) {
+                renderTimeSlots();
+                alert(`成功新增 ${addedCount} 個時段！`);
+            } else {
+                alert('所選時段已存在');
+            }
+        }
+
+        function renderTimeSlots() {
+            const container = document.getElementById('timeSlotsList');
+            if (currentMeetingSlots.length === 0) {
+                container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">尚未新增任何時段</p>';
+                return;
+            }
+            
+            container.innerHTML = '<h3>已新增的時段：</h3><div class="time-slots">' +
+                currentMeetingSlots.map(slot => `
+                    <div class="time-slot">
+                        <span>${slot.text}</span>
+                        <button class="btn btn-danger" onclick="removeTimeSlot('${slot.id}')" style="padding: 5px 10px; font-size: 12px;">移除</button>
+                    </div>
+                `).join('') +
+                '</div>';
+        }
+
+        function removeTimeSlot(slotId) {
+            currentMeetingSlots = currentMeetingSlots.filter(slot => slot.id !== slotId);
+            renderTimeSlots();
+        }
+
+        function createMeeting() {
+            const title = document.getElementById('meetingTitle').value;
+            const organizer = document.getElementById('organizerName').value;
+            
+            if (!title || !organizer) {
+                alert('請填寫會議主題和發起人姓名');
+                return;
+            }
+            
+            if (currentMeetingSlots.length === 0) {
+                alert('請至少新增一個時段選項');
+                return;
+            }
+            
+            const meetingId = 'MEET' + Math.random().toString(36).substr(2, 6).toUpperCase();
+            
+            const meeting = {
+                id: meetingId,
+                title: title,
+                organizer: organizer,
+                slots: [...currentMeetingSlots],
+                created: new Date().toISOString()
+            };
+            
+            // 儲存到 localStorage
+            let meetings = JSON.parse(localStorage.getItem('meetings') || '{}');
+            meetings[meetingId] = meeting;
+            localStorage.setItem('meetings', JSON.stringify(meetings));
+            
+            // 顯示分享區塊
+            const shareUrl = `${window.location.origin}/meeting.html?code=${meetingId}`;
+            document.getElementById('shareSection').style.display = 'block';
+            document.getElementById('shareLink').textContent = shareUrl;
+            
+            // 清空表單
+            document.getElementById('meetingTitle').value = '';
+            document.getElementById('organizerName').value = '';
+            currentMeetingSlots = [];
+            renderTimeSlots();
+            
+            alert('會議約定建立成功！請分享連結給其他人。');
+        }
+
+        function copyLink() {
+            const shareUrl = document.getElementById('shareLink').textContent;
+            navigator.clipboard.writeText(shareUrl).then(() => {
+                alert('連結已複製到剪貼簿！');
+            });
+        }
+
+        // 初始化
+        renderTimeSlots();
+        
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = tomorrow.toISOString().split('T')[0];
+        document.getElementById('dateSelector').value = tomorrowStr;
+        
+        setTimeout(() => {
+            initializeSlider();
+            updateSelectedRange();
+        }, 100);
+    </script>
+</body>
+</html>

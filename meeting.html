@@ -23,6 +23,7 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
+            backdrop-filter: blur(10px);
         }
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -33,9 +34,44 @@
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            background: #f8f9fa;
+            border: none;
+            font-size: 16px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s ease;
+        }
+        .tab.active {
+            background: white;
+            color: #4facfe;
+            border-bottom: 3px solid #4facfe;
+        }
+        .tab:hover {
+            background: #e9ecef;
+        }
+        .tab.active:hover {
+            background: white;
         }
         .content {
             padding: 30px;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
         }
         .form-group {
             margin-bottom: 25px;
@@ -52,10 +88,12 @@
             border: 2px solid #e9ecef;
             border-radius: 10px;
             font-size: 16px;
+            transition: border-color 0.3s ease;
         }
         input:focus {
             outline: none;
             border-color: #4facfe;
+            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
         }
         .btn {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -66,126 +104,147 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
+            transition: transform 0.2s ease;
             margin: 5px;
         }
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
         }
-        .btn-secondary {
-            background: #6c757d;
-        }
-        .time-slot {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
+        .alert {
             padding: 15px;
-            margin-bottom: 15px;
-        }
-        .time-slot label {
-            margin-bottom: 10px;
-            display: block;
-        }
-        .slider-container {
-            position: relative;
-            height: 20px;
             margin-bottom: 20px;
+            border-radius: 10px;
+            border-left: 4px solid;
         }
-        input[type="range"] {
-            width: 100%;
-            -webkit-appearance: none;
-            background: transparent;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 2;
+        .alert-info {
+            background: #d1ecf1;
+            border-left-color: #17a2b8;
+            color: #0c5460;
         }
-        input[type="range"]::-webkit-slider-runnable-track {
-            height: 8px;
-            background: #e9ecef;
-            border-radius: 4px;
+        .alert-danger {
+            background: #f8d7da;
+            border-left-color: #dc3545;
+            color: #721c24;
         }
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            width: 20px;
-            height: 20px;
-            background: #4facfe;
-            border-radius: 50%;
-            margin-top: -6px;
-            cursor: grab;
+        .results {
+            margin-top: 30px;
         }
-        .track {
-            position: absolute;
-            top: 0;
-            height: 8px;
-            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
-            border-radius: 4px;
-            z-index: 1;
-        }
-        .error-section {
-            text-align: center;
-            padding: 50px;
-            color: #dc3545;
-        }
-        .results-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        .results-table th, .results-table td {
+        .result-item {
+            background: white;
             border: 1px solid #e9ecef;
-            padding: 10px;
-            text-align: left;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
         }
-        .results-table th {
-            background: #f8f9fa;
+        .result-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .result-time {
+            font-size: 18px;
             font-weight: 600;
+            color: #333;
+        }
+        .result-count {
+            background: #4facfe;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        .result-names {
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .best-time {
+            border: 3px solid #28a745;
+            background: #f8fff9;
+        }
+        .best-time .result-count {
+            background: #28a745;
+        }
+        .time-slot-segment {
+            position: absolute;
+            height: 100%;
+            background: #f8f9fa;
+            border: 2px solid #dee2e6;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        .time-slot-segment.selected {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-color: #4facfe;
+            color: white;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1 id="meetingHeader">🗓️ 參與會議</h1>
-            <p>請填寫您的空檔時間</p>
+            <h1>🗓️ 會議時間約定系統 - 參與會議</h1>
+            <p id="meetingHeader">載入會議中...</p>
         </div>
         
-        <div class="content" id="mainContent" style="display: none;">
-            <div class="form-group">
-                <h3>會議資訊</h3>
-                <p><strong>主題：</strong> <span id="meetingTitleDisplay"></span></p>
-                <p><strong>發起人：</strong> <span id="organizerDisplay"></span></p>
+        <div id="mainContent" style="display: none;">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('participant')">✅ 填寫空檔</button>
+                <button class="tab" onclick="showTab('results')">📊 查看結果</button>
             </div>
             
-            <div class="form-group">
-                <label for="participantName">您的姓名</label>
-                <input type="text" id="participantName" placeholder="請輸入您的姓名">
-            </div>
-            
-            <div id="availabilitySection">
-                <h3>📅 填寫您的空檔</h3>
-                <div id="timeSlots"></div>
-                <button class="btn" onclick="submitAvailability()">✅ 提交空檔</button>
-            </div>
-            
-            <div id="resultsSection" style="display: none;">
-                <h3>📊 投票結果</h3>
-                <table class="results-table" id="resultsTable">
-                    <thead>
-                        <tr>
-                            <th>時段</th>
-                            <th>參與者</th>
-                        </tr>
-                    </thead>
-                    <tbody></tbody>
-                </table>
-                <button class="btn btn-secondary" onclick="showAvailabilityForm()">⬅ 返回填寫空檔</button>
+            <div class="content">
+                <!-- 參與者介面 -->
+                <div id="participant" class="tab-content active">
+                    <h2>填寫您的可用時段</h2>
+                    
+                    <div class="form-group">
+                        <label for="participantName">您的姓名</label>
+                        <input type="text" id="participantName" placeholder="請輸入您的姓名">
+                    </div>
+                    
+                    <div id="meetingInfo">
+                        <div class="alert alert-info">
+                            <strong id="meetingTitleDisplay"></strong><br>
+                            發起人：<span id="organizerDisplay"></span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>請選擇您可以參加的時段：</label>
+                            <div id="participantSlider" style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin: 15px 0;">
+                                <div id="participantTimeSlots"></div>
+                            </div>
+                        </div>
+                        
+                        <button class="btn" onclick="submitAvailability()" style="width: 100%; margin-top: 20px;">
+                            ✅ 提交我的空檔時間
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- 結果檢視介面 -->
+                <div id="results" class="tab-content">
+                    <h2>會議時段統計結果</h2>
+                    <div id="resultsDisplay"></div>
+                </div>
             </div>
         </div>
         
-        <div class="error-section" id="errorSection">
-            <h2>❌ 無效的會議連結</h2>
-            <p>請確認您的連結是否正確，或聯繫會議發起人。</p>
+        <div id="errorSection" style="display: none; padding: 30px;">
+            <div class="alert alert-danger">
+                <strong>錯誤</strong><br>
+                找不到該會議，請確認連結是否正確。
+            </div>
         </div>
     </div>
 
@@ -208,6 +267,7 @@
 
         // 初始化 Firebase
         let app, db;
+        let participantSelections = {};
         try {
             app = firebase.initializeApp(firebaseConfig);
             db = firebase.database();
@@ -219,13 +279,14 @@
 
         function getMeetingCodeFromUrl() {
             const params = new URLSearchParams(window.location.search);
-            return params.get('code');
+            return params.get('code')?.toUpperCase() || '';
         }
 
-        function showError(message = '無效的會議連結') {
+        function showError(message = '找不到該會議，請確認連結是否正確') {
             document.getElementById('mainContent').style.display = 'none';
             document.getElementById('errorSection').style.display = 'block';
             document.getElementById('errorSection').querySelector('p').textContent = message;
+            document.getElementById('meetingHeader').textContent = '無效的會議連結';
         }
 
         function loadMeeting() {
@@ -264,77 +325,144 @@
             });
         }
 
-        function createParticipantSliders(slots) {
-            const container = document.getElementById('timeSlots');
-            container.innerHTML = '';
+        function showTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
             
-            slots.forEach(slot => {
-                const slotDiv = document.createElement('div');
-                slotDiv.className = 'time-slot';
-                
-                const label = document.createElement('label');
-                label.textContent = slot.text;
-                slotDiv.appendChild(label);
-                
-                const sliderContainer = document.createElement('div');
-                sliderContainer.className = 'slider-container';
-                
-                const track = document.createElement('div');
-                track.className = 'track';
-                track.id = `track-${slot.id}`;
-                sliderContainer.appendChild(track);
-                
-                const startInput = document.createElement('input');
-                startInput.type = 'range';
-                startInput.id = `start-${slot.id}`;
-                startInput.min = '0';
-                startInput.max = '60';
-                startInput.value = '0';
-                sliderContainer.appendChild(startInput);
-                
-                const endInput = document.createElement('input');
-                endInput.type = 'range';
-                endInput.id = `end-${slot.id}`;
-                endInput.min = '0';
-                endInput.max = '60';
-                endInput.value = '60';
-                sliderContainer.appendChild(endInput);
-                
-                slotDiv.appendChild(sliderContainer);
-                container.appendChild(slotDiv);
-                
-                updateTrack(slot.id);
-                
-                startInput.addEventListener('input', () => {
-                    if (parseInt(startInput.value) >= parseInt(endInput.value)) {
-                        endInput.value = parseInt(startInput.value) + 1;
-                    }
-                    updateTrack(slot.id);
-                });
-                
-                endInput.addEventListener('input', () => {
-                    if (parseInt(endInput.value) <= parseInt(startInput.value)) {
-                        startInput.value = parseInt(endInput.value) - 1;
-                    }
-                    updateTrack(slot.id);
-                });
+            document.getElementById(tabName).classList.add('active');
+            document.querySelector(`button[onclick="showTab('${tabName}')"]`).classList.add('active');
+            
+            if (tabName === 'participant') {
+                resetParticipantInterface();
+            } else if (tabName === 'results') {
+                loadResults();
+            }
+        }
+
+        function resetParticipantInterface() {
+            participantSelections = {};
+            const code = getMeetingCodeFromUrl();
+            if (!db) {
+                showError('Firebase 未初始化，請檢查網路連線');
+                return;
+            }
+            db.ref('meetings/' + code).once('value').then(snapshot => {
+                const meeting = snapshot.val();
+                if (!meeting) {
+                    showError('會議不存在，請確認連結正確');
+                    return;
+                }
+                const container = document.getElementById('participantTimeSlots');
+                container.innerHTML = '';
+                document.getElementById('participantName').value = '';
+                createParticipantSliders(meeting.slots);
+            }).catch(error => {
+                console.error('Error resetting participant interface:', error);
+                showError('重置介面失敗：' + error.message);
             });
         }
 
-        function updateTrack(slotId) {
-            const startInput = document.getElementById(`start-${slotId}`);
-            const endInput = document.getElementById(`end-${slotId}`);
-            const track = document.getElementById(`track-${slotId}`);
+        function createParticipantSliders(slots) {
+            const slotsByDate = {};
+            slots.forEach(slot => {
+                const date = new Date(slot.datetime);
+                const dateKey = date.toISOString().split('T')[0];
+                if (!slotsByDate[dateKey]) {
+                    slotsByDate[dateKey] = [];
+                }
+                slotsByDate[dateKey].push({
+                    ...slot,
+                    hour: date.getHours()
+                });
+            });
             
-            const startPercent = (startInput.value / 60) * 100;
-            const endPercent = (endInput.value / 60) * 100;
+            const container = document.getElementById('participantTimeSlots');
+            const newContainer = container.cloneNode(false);
+            container.parentNode.replaceChild(newContainer, container);
             
-            track.style.left = `${startPercent}%`;
-            track.style.width = `${endPercent - startPercent}%`;
+            newContainer.innerHTML = '';
+            
+            Object.keys(slotsByDate).sort().forEach(dateKey => {
+                const date = new Date(dateKey);
+                const dateStr = date.toLocaleDateString('zh-TW', {
+                    year: 'numeric',
+                    month: 'numeric',
+                    day: 'numeric',
+                    weekday: 'long'
+                });
+                
+                const daySlots = slotsByDate[dateKey].sort((a, b) => a.hour - b.hour);
+                const minHour = Math.min(...daySlots.map(s => s.hour));
+                const maxHour = Math.max(...daySlots.map(s => s.hour)) + 1;
+                
+                const dayDiv = document.createElement('div');
+                dayDiv.style.marginBottom = '25px';
+                dayDiv.innerHTML = `
+                    <h4 style="margin-bottom: 15px; color: #333;">${dateStr}</h4>
+                    <div class="participant-day-slider" data-date="${dateKey}" style="position: relative; height: 40px; background: #e9ecef; border-radius: 10px; margin: 15px 0; cursor: pointer;">
+                        ${daySlots.map(slot => `
+                            <div class="time-slot-segment" 
+                                 data-slot-id="${slot.id}"
+                                 style="position: absolute; 
+                                        left: ${((slot.hour - minHour) / (maxHour - minHour)) * 100}%; 
+                                        width: ${(1 / (maxHour - minHour)) * 100}%; 
+                                        height: 100%; 
+                                        background: #f8f9fa; 
+                                        border: 2px solid #dee2e6; 
+                                        border-radius: 5px;
+                                        display: flex;
+                                        align-items: center;
+                                        justify-content: center;
+                                        font-size: 12px;
+                                        font-weight: 600;
+                                        color: #6c757d;
+                                        transition: all 0.2s ease;
+                                        cursor: pointer;">
+                                ${String(slot.hour).padStart(2, '0')}:00
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div style="display: flex; justify-content: space-between; font-size: 12px; color: #6c757d; margin-top: 5px;">
+                        <span>${String(minHour).padStart(2, '0')}:00</span>
+                        <span>${String(maxHour).padStart(2, '0')}:00</span>
+                    </div>
+                `;
+                
+                newContainer.appendChild(dayDiv);
+            });
+            
+            newContainer.addEventListener('click', function(e) {
+                if (e.target.classList.contains('time-slot-segment')) {
+                    const slotId = e.target.dataset.slotId;
+                    toggleSlotSelection(e.target, slotId);
+                }
+            });
+        }
+
+        function toggleSlotSelection(element, slotId) {
+            if (element.classList.contains('selected')) {
+                element.classList.remove('selected');
+                element.style.background = '#f8f9fa';
+                element.style.borderColor = '#dee2e6';
+                element.style.color = '#6c757d';
+                delete participantSelections[slotId];
+            } else {
+                element.classList.add('selected');
+                element.style.background = 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)';
+                element.style.borderColor = '#4facfe';
+                element.style.color = 'white';
+                participantSelections[slotId] = true;
+            }
         }
 
         async function submitAvailability() {
-            const name = document.getElementById('participantName').value;
+            const name = document.getElementById('participantName').value.trim();
+            const code = getMeetingCodeFromUrl();
+            
             if (!name) {
                 alert('請輸入您的姓名');
                 return;
@@ -345,92 +473,86 @@
                 return;
             }
             
-            const code = getMeetingCodeFromUrl();
-            const slots = [];
-            
-            document.querySelectorAll('.time-slot').forEach(slot => {
-                const slotId = slot.querySelector('input[type="range"]').id.split('-')[1];
-                const start = parseInt(document.getElementById(`start-${slotId}`).value);
-                const end = parseInt(document.getElementById(`end-${slotId}`).value);
-                
-                if (start !== 0 || end !== 60) {
-                    slots.push({
-                        slotId: slotId,
-                        start: start,
-                        end: end
-                    });
-                }
-            });
+            const selectedSlots = Object.keys(participantSelections);
+            if (selectedSlots.length === 0) {
+                alert('請至少選擇一個可用時段');
+                return;
+            }
             
             try {
                 const participantId = 'PART' + Math.random().toString(36).substr(2, 6).toUpperCase();
                 await db.ref(`meetings/${code}/slots`).transaction(slotsData => {
                     if (!slotsData) return slotsData;
-                    slots.forEach(slot => {
-                        const targetSlot = slotsData.find(s => s.id === slot.slotId);
+                    selectedSlots.forEach(slotId => {
+                        const targetSlot = slotsData.find(s => s.id === slotId);
                         if (targetSlot) {
                             targetSlot.votes = targetSlot.votes || [];
-                            targetSlot.votes.push({
-                                participantId: participantId,
-                                name: name,
-                                start: slot.start,
-                                end: slot.end
-                            });
+                            targetSlot.votes.push({ participantId, name });
                         }
                     });
                     return slotsData;
                 });
                 
-                alert('空檔提交成功！');
-                showResults();
+                console.log('Availability submitted for:', name, selectedSlots);
+                alert('提交成功！感謝您的參與。');
+                showTab('results');
             } catch (error) {
                 console.error('Error submitting availability:', error);
-                alert('提交失敗，請稍後重試');
+                alert('提交失敗，請稍後重試：' + error.message);
             }
         }
 
-        function showResults() {
-            document.getElementById('availabilitySection').style.display = 'none';
-            document.getElementById('resultsSection').style.display = 'block';
-            
+        function loadResults() {
             const code = getMeetingCodeFromUrl();
             if (!db) {
                 showError('Firebase 未初始化，請檢查網路連線');
                 return;
             }
             
-            db.ref(`meetings/${code}/slots`).once('value').then(snapshot => {
-                const slots = snapshot.val() || [];
-                const tbody = document.querySelector('#resultsTable tbody');
-                tbody.innerHTML = '';
-                
-                slots.forEach(slot => {
-                    if (slot.votes && slot.votes.length > 0) {
-                        slot.votes.forEach(vote => {
-                            const row = document.createElement('tr');
-                            const timeCell = document.createElement('td');
-                            timeCell.textContent = slot.text;
-                            const nameCell = document.createElement('td');
-                            nameCell.textContent = `${vote.name} (${vote.start}-${vote.end} 分鐘)`;
-                            row.appendChild(timeCell);
-                            row.appendChild(nameCell);
-                            tbody.appendChild(row);
-                        });
-                    }
-                });
-                
-                if (tbody.innerHTML === '') {
-                    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">尚未有投票結果</td></tr>';
+            db.ref(`meetings/${code}`).once('value').then(snapshot => {
+                const meeting = snapshot.val();
+                console.log('Results data:', meeting);
+                if (!meeting) {
+                    document.getElementById('resultsDisplay').innerHTML = `
+                        <div class="alert alert-danger">
+                            找不到該會議
+                        </div>
+                    `;
+                    return;
                 }
+                
+                const sortedSlots = [...meeting.slots].sort((a, b) => b.votes.length - a.votes.length);
+                const maxVotes = sortedSlots[0]?.votes.length || 0;
+                
+                const resultsHTML = `
+                    <div class="alert alert-info">
+                        <strong>${meeting.title}</strong><br>
+                        發起人：${meeting.organizer}<br>
+                        總投票人數：${new Set(meeting.slots.flatMap(slot => slot.votes.map(v => v.name))).size} 人
+                    </div>
+                    
+                    <div class="results">
+                        ${sortedSlots.map(slot => `
+                            <div class="result-item ${slot.votes.length === maxVotes && maxVotes > 0 ? 'best-time' : ''}">
+                                <div class="result-header">
+                                    <div class="result-time">
+                                        ${slot.votes.length === maxVotes && maxVotes > 0 ? '🏆 ' : ''}${slot.text}
+                                    </div>
+                                    <div class="result-count">${slot.votes.length} 人可參加</div>
+                                </div>
+                                <div class="result-names">
+                                    ${slot.votes.length > 0 ? `參與者：${slot.votes.map(v => v.name).join(', ')}` : '暫無人選擇此時段'}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                `;
+                
+                document.getElementById('resultsDisplay').innerHTML = resultsHTML;
             }).catch(error => {
                 console.error('Error loading results:', error);
-                showError('載入結果失敗，請檢查網路連線');
+                showError('載入結果失敗：' + error.message);
             });
-        }
-
-        function showAvailabilityForm() {
-            document.getElementById('availabilitySection').style.display = 'block';
-            document.getElementById('resultsSection').style.display = 'none';
         }
 
         // 初始化

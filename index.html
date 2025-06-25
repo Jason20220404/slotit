@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>會議時間約定系統 - 發起會議</title>
+    <title>會議時間約定系統 - 參與會議</title>
     <style>
         * {
             margin: 0;
@@ -23,7 +23,6 @@
             border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
             overflow: hidden;
-            backdrop-filter: blur(10px);
         }
         .header {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -34,7 +33,6 @@
         .header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
         }
         .content {
             padding: 30px;
@@ -48,37 +46,16 @@
             font-weight: 600;
             color: #333;
         }
-        input, select {
+        input {
             width: 100%;
             padding: 12px 15px;
             border: 2px solid #e9ecef;
             border-radius: 10px;
             font-size: 16px;
-            transition: border-color 0.3s ease;
         }
-        input:focus, select:focus {
+        input:focus {
             outline: none;
             border-color: #4facfe;
-            box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
-        }
-        .time-slots {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-            margin-top: 20px;
-        }
-        .time-slot {
-            background: #f8f9fa;
-            border: 2px solid #e9ecef;
-            border-radius: 10px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.3s ease;
-        }
-        .time-slot:hover {
-            background: #e9ecef;
         }
         .btn {
             background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
@@ -89,159 +66,126 @@
             cursor: pointer;
             font-size: 16px;
             font-weight: 600;
-            transition: transform 0.2s ease;
             margin: 5px;
         }
         .btn:hover {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(79, 172, 254, 0.4);
         }
-        .btn-danger {
-            background: #dc3545;
+        .btn-secondary {
+            background: #6c757d;
         }
-        .share-link {
+        .time-slot {
             background: #f8f9fa;
-            border: 2px dashed #4facfe;
+            border: 2px solid #e9ecef;
             border-radius: 10px;
-            padding: 20px;
-            margin: 20px 0;
-            text-align: center;
-        }
-        .link-display {
-            background: white;
-            border: 1px solid #e9ecef;
-            border-radius: 5px;
-            padding: 10px;
-            margin: 10px 0;
-            font-family: monospace;
-            word-break: break-all;
-        }
-        .alert {
             padding: 15px;
+            margin-bottom: 15px;
+        }
+        .time-slot label {
+            margin-bottom: 10px;
+            display: block;
+        }
+        .slider-container {
+            position: relative;
+            height: 20px;
             margin-bottom: 20px;
-            border-radius: 10px;
-            border-left: 4px solid;
         }
-        .alert-success {
-            background: #d4edda;
-            border-left-color: #28a745;
-            color: #155724;
+        input[type="range"] {
+            width: 100%;
+            -webkit-appearance: none;
+            background: transparent;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 2;
         }
-        .time-selector {
-            display: flex;
-            gap: 15px;
-            align-items: center;
+        input[type="range"]::-webkit-slider-runnable-track {
+            height: 8px;
+            background: #e9ecef;
+            border-radius: 4px;
+        }
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #4facfe;
+            border-radius: 50%;
+            margin-top: -6px;
+            cursor: grab;
+        }
+        .track {
+            position: absolute;
+            top: 0;
+            height: 8px;
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            border-radius: 4px;
+            z-index: 1;
+        }
+        .error-section {
+            text-align: center;
+            padding: 50px;
+            color: #dc3545;
+        }
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .results-table th, .results-table td {
+            border: 1px solid #e9ecef;
+            padding: 10px;
+            text-align: left;
+        }
+        .results-table th {
+            background: #f8f9fa;
+            font-weight: 600;
         }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🗓️ 會議時間約定系統 - 發起會議</h1>
-            <p>輕鬆創建會議並分享給參與者</p>
+            <h1 id="meetingHeader">🗓️ 參與會議</h1>
+            <p>請填寫您的空檔時間</p>
         </div>
         
-        <div class="content">
-            <h2>建立新的會議約定</h2>
-            
+        <div class="content" id="mainContent" style="display: none;">
             <div class="form-group">
-                <label for="meetingTitle">會議主題</label>
-                <input type="text" id="meetingTitle" placeholder="例如：週會討論">
-            </div>
-            
-            <div class="form-group">
-                <label for="organizerName">發起人姓名</label>
-                <input type="text" id="organizerName" placeholder="您的姓名">
+                <h3>會議資訊</h3>
+                <p><strong>主題：</strong> <span id="meetingTitleDisplay"></span></p>
+                <p><strong>發起人：</strong> <span id="organizerDisplay"></span></p>
             </div>
             
             <div class="form-group">
-                <label>📅 選擇日期與時段</label>
-                
-                <div style="margin-bottom: 20px;">
-                    <label for="dateSelector" style="font-size: 14px; margin-bottom: 5px;">選擇日期：</label>
-                    <input type="date" id="dateSelector" style="width: 200px; margin-bottom: 15px;">
-                </div>
-                
-                <div style="background: #f8f9fa; border-radius: 15px; padding: 25px; margin-bottom: 20px;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                        <span style="font-weight: 600;">⏰ 選擇時段範圍</span>
-                        <span style="font-size: 14px; color: #6c757d;">選中時段：<span id="selectedRange">尚未選擇</span></span>
-                    </div>
-                    
-                    <div class="time-selector">
-                        <div>
-                            <label for="startTime">開始時間</label>
-                            <select id="startTime">
-                                <option value="6">06:00</option>
-                                <option value="7">07:00</option>
-                                <option value="8">08:00</option>
-                                <option value="9">09:00</option>
-                                <option value="10">10:00</option>
-                                <option value="11">11:00</option>
-                                <option value="12">12:00</option>
-                                <option value="13">13:00</option>
-                                <option value="14">14:00</option>
-                                <option value="15">15:00</option>
-                                <option value="16">16:00</option>
-                                <option value="17">17:00</option>
-                                <option value="18">18:00</option>
-                                <option value="19">19:00</option>
-                                <option value="20">20:00</option>
-                                <option value="21">21:00</option>
-                                <option value="22">22:00</option>
-                                <option value="23">23:00</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label for="endTime">結束時間</label>
-                            <select id="endTime">
-                                <option value="7">07:00</option>
-                                <option value="8">08:00</option>
-                                <option value="9">09:00</option>
-                                <option value="10">10:00</option>
-                                <option value="11">11:00</option>
-                                <option value="12">12:00</option>
-                                <option value="13">13:00</option>
-                                <option value="14">14:00</option>
-                                <option value="15">15:00</option>
-                                <option value="16">16:00</option>
-                                <option value="17">17:00</option>
-                                <option value="18">18:00</option>
-                                <option value="19">19:00</option>
-                                <option value="20">20:00</option>
-                                <option value="21">21:00</option>
-                                <option value="22">22:00</option>
-                                <option value="23">23:00</option>
-                                <option value="24">24:00</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div style="text-align: center; margin-top: 20px;">
-                        <button class="btn" onclick="addSelectedRange()" style="background: linear-gradient(135deg, #28a745 0%, #20c997 100%);">
-                            ➕ 新增選中的時段
-                        </button>
-                    </div>
-                </div>
+                <label for="participantName">您的姓名</label>
+                <input type="text" id="participantName" placeholder="請輸入您的姓名">
             </div>
             
-            <div id="timeSlotsList"></div>
-            
-            <button class="btn" onclick="createMeeting()" style="width: 100%; margin-top: 20px;">
-                🚀 建立會議約定
-            </button>
-            
-            <div id="shareSection" style="display: none;">
-                <div class="alert alert-success">
-                    <strong>✅ 會議約定建立成功！</strong><br>
-                    請將下方連結分享給其他參與者：
-                </div>
-                <div class="share-link">
-                    <p><strong>分享連結：</strong></p>
-                    <div class="link-display" id="shareLink"></div>
-                    <button class="btn" onclick="copyLink()">📋 複製連結</button>
-                </div>
+            <div id="availabilitySection">
+                <h3>📅 填寫您的空檔</h3>
+                <div id="timeSlots"></div>
+                <button class="btn" onclick="submitAvailability()">✅ 提交空檔</button>
             </div>
+            
+            <div id="resultsSection" style="display: none;">
+                <h3>📊 投票結果</h3>
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>時段</th>
+                            <th>參與者</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+                <button class="btn btn-secondary" onclick="showAvailabilityForm()">⬅ 返回填寫空檔</button>
+            </div>
+        </div>
+        
+        <div class="error-section" id="errorSection">
+            <h2>❌ 無效的會議連結</h2>
+            <p>請確認您的連結是否正確，或聯繫會議發起人。</p>
         </div>
     </div>
 
@@ -250,9 +194,6 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
-        // 確保變數在頂部初始化
-        let currentMeetingSlots = [];
-
         // Firebase 配置
         const firebaseConfig = {
             apiKey: "AIzaSyBMDeCdVo1Ek4asGX4invTVwwuG1TTywKo",
@@ -273,171 +214,229 @@
             console.log('Firebase initialized successfully:', app.name);
         } catch (error) {
             console.error('Firebase initialization failed:', error);
-            alert('Firebase 初始化失敗，請檢查配置或網路連線');
+            showError('Firebase 初始化失敗，請檢查網路連線');
         }
 
-        function updateSelectedRange() {
-            const startTime = parseInt(document.getElementById('startTime').value);
-            const endTime = parseInt(document.getElementById('endTime').value);
-            if (endTime <= startTime) {
-                alert('結束時間必須晚於開始時間');
-                document.getElementById('endTime').value = startTime + 1;
-                return;
-            }
-            const startStr = String(startTime).padStart(2, '0') + ':00';
-            const endStr = String(endTime).padStart(2, '0') + ':00';
-            document.getElementById('selectedRange').textContent = `${startStr} - ${endStr}`;
+        function getMeetingCodeFromUrl() {
+            const params = new URLSearchParams(window.location.search);
+            return params.get('code');
         }
 
-        function addSelectedRange() {
-            const date = document.getElementById('dateSelector').value;
-            const startTime = parseInt(document.getElementById('startTime').value);
-            const endTime = parseInt(document.getElementById('endTime').value);
-            
-            if (!date) {
-                alert('請選擇日期');
+        function showError(message = '無效的會議連結') {
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('errorSection').style.display = 'block';
+            document.getElementById('errorSection').querySelector('p').textContent = message;
+        }
+
+        function loadMeeting() {
+            console.log('Starting loadMeeting...');
+            const code = getMeetingCodeFromUrl();
+            console.log('Meeting code from URL:', code);
+            if (!code) {
+                console.log('No meeting code found in URL');
+                showError('無效的會議連結：缺少代碼');
                 return;
             }
-            
-            if (endTime <= startTime) {
-                alert('結束時間必須晚於開始時間');
+            if (!db) {
+                console.log('Firebase db not initialized');
+                showError('Firebase 未初始化，請檢查網路連線');
                 return;
             }
-            
-            let addedCount = 0;
-            
-            for (let hour = startTime; hour < endTime; hour++) {
-                const dateTime = new Date(date + 'T' + String(hour).padStart(2, '0') + ':00:00');
-                const dateStr = dateTime.toLocaleDateString('zh-TW', {
-                    month: 'numeric',
-                    day: 'numeric',
-                    weekday: 'short'
-                });
-                const timeStr = dateTime.toLocaleTimeString('zh-TW', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    hour12: false
-                });
-                
-                const slotText = `${dateStr} ${timeStr}`;
-                const slotId = dateTime.getTime().toString();
-                
-                const exists = currentMeetingSlots.some(slot => slot.datetime === dateTime.toISOString());
-                if (!exists) {
-                    currentMeetingSlots.push({
-                        id: slotId,
-                        text: slotText,
-                        datetime: dateTime.toISOString(),
-                        votes: []
-                    });
-                    addedCount++;
+            console.log('Fetching meeting from Firebase:', `/meetings/${code}`);
+            db.ref('meetings/' + code).once('value').then(snapshot => {
+                const meeting = snapshot.val();
+                console.log('Meeting data:', meeting);
+                if (!meeting) {
+                    console.log('No meeting found for code:', code);
+                    showError('會議不存在，請確認連結正確');
+                    return;
                 }
-            }
-            
-            if (addedCount > 0) {
-                renderTimeSlots();
-                alert(`成功新增 ${addedCount} 個時段！`);
-            } else {
-                alert('所選時段已存在');
-            }
+                document.getElementById('meetingHeader').textContent = meeting.title;
+                document.getElementById('meetingTitleDisplay').textContent = meeting.title;
+                document.getElementById('organizerDisplay').textContent = meeting.organizer;
+                document.getElementById('mainContent').style.display = 'block';
+                document.getElementById('errorSection').style.display = 'none';
+                console.log('Creating participant sliders for slots:', meeting.slots);
+                createParticipantSliders(meeting.slots);
+            }).catch(error => {
+                console.error('Error loading meeting:', error);
+                showError('載入會議失敗：' + error.message);
+            });
         }
 
-        function renderTimeSlots() {
-            const container = document.getElementById('timeSlotsList');
-            if (currentMeetingSlots.length === 0) {
-                container.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 20px;">尚未新增任何時段</p>';
+        function createParticipantSliders(slots) {
+            const container = document.getElementById('timeSlots');
+            container.innerHTML = '';
+            
+            slots.forEach(slot => {
+                const slotDiv = document.createElement('div');
+                slotDiv.className = 'time-slot';
+                
+                const label = document.createElement('label');
+                label.textContent = slot.text;
+                slotDiv.appendChild(label);
+                
+                const sliderContainer = document.createElement('div');
+                sliderContainer.className = 'slider-container';
+                
+                const track = document.createElement('div');
+                track.className = 'track';
+                track.id = `track-${slot.id}`;
+                sliderContainer.appendChild(track);
+                
+                const startInput = document.createElement('input');
+                startInput.type = 'range';
+                startInput.id = `start-${slot.id}`;
+                startInput.min = '0';
+                startInput.max = '60';
+                startInput.value = '0';
+                sliderContainer.appendChild(startInput);
+                
+                const endInput = document.createElement('input');
+                endInput.type = 'range';
+                endInput.id = `end-${slot.id}`;
+                endInput.min = '0';
+                endInput.max = '60';
+                endInput.value = '60';
+                sliderContainer.appendChild(endInput);
+                
+                slotDiv.appendChild(sliderContainer);
+                container.appendChild(slotDiv);
+                
+                updateTrack(slot.id);
+                
+                startInput.addEventListener('input', () => {
+                    if (parseInt(startInput.value) >= parseInt(endInput.value)) {
+                        endInput.value = parseInt(startInput.value) + 1;
+                    }
+                    updateTrack(slot.id);
+                });
+                
+                endInput.addEventListener('input', () => {
+                    if (parseInt(endInput.value) <= parseInt(startInput.value)) {
+                        startInput.value = parseInt(endInput.value) - 1;
+                    }
+                    updateTrack(slot.id);
+                });
+            });
+        }
+
+        function updateTrack(slotId) {
+            const startInput = document.getElementById(`start-${slotId}`);
+            const endInput = document.getElementById(`end-${slotId}`);
+            const track = document.getElementById(`track-${slotId}`);
+            
+            const startPercent = (startInput.value / 60) * 100;
+            const endPercent = (endInput.value / 60) * 100;
+            
+            track.style.left = `${startPercent}%`;
+            track.style.width = `${endPercent - startPercent}%`;
+        }
+
+        async function submitAvailability() {
+            const name = document.getElementById('participantName').value;
+            if (!name) {
+                alert('請輸入您的姓名');
                 return;
             }
             
-            container.innerHTML = '<h3>已新增的時段：</h3><div class="time-slots">' +
-                currentMeetingSlots.map(slot => `
-                    <div class="time-slot">
-                        <span>${slot.text}</span>
-                        <button class="btn btn-danger" onclick="removeTimeSlot('${slot.id}')" style="padding: 5px 10px; font-size: 12px;">移除</button>
-                    </div>
-                `).join('') +
-                '</div>';
-        }
-
-        function removeTimeSlot(slotId) {
-            currentMeetingSlots = currentMeetingSlots.filter(slot => slot.id !== slotId);
-            renderTimeSlots();
-        }
-
-        async function createMeeting() {
-            const title = document.getElementById('meetingTitle').value;
-            const organizer = document.getElementById('organizerName').value;
-            
-            if (!title || !organizer) {
-                alert('請填寫會議主題和發起人姓名');
+            if (!db) {
+                alert('Firebase 未初始化，請檢查網路連線');
                 return;
             }
             
-            if (currentMeetingSlots.length === 0) {
-                alert('請至少新增一個時段選項');
-                return;
-            }
+            const code = getMeetingCodeFromUrl();
+            const slots = [];
             
-            const meetingId = 'MEET' + Math.random().toString(36).substr(2, 6).toUpperCase();
-            
-            const meeting = {
-                id: meetingId,
-                title: title,
-                organizer: organizer,
-                slots: [...currentMeetingSlots],
-                created: new Date().toISOString()
-            };
+            document.querySelectorAll('.time-slot').forEach(slot => {
+                const slotId = slot.querySelector('input[type="range"]').id.split('-')[1];
+                const start = parseInt(document.getElementById(`start-${slotId}`).value);
+                const end = parseInt(document.getElementById(`end-${slotId}`).value);
+                
+                if (start !== 0 || end !== 60) {
+                    slots.push({
+                        slotId: slotId,
+                        start: start,
+                        end: end
+                    });
+                }
+            });
             
             try {
-                if (!db) throw new Error('Firebase database not initialized');
-                await db.ref('meetings/' + meetingId).set(meeting);
-                const shareUrl = `${window.location.origin}/slotit/meeting.html?code=${meetingId}`;
-                document.getElementById('shareSection').style.display = 'block';
-                document.getElementById('shareLink').textContent = shareUrl;
+                const participantId = 'PART' + Math.random().toString(36).substr(2, 6).toUpperCase();
+                await db.ref(`meetings/${code}/slots`).transaction(slotsData => {
+                    if (!slotsData) return slotsData;
+                    slots.forEach(slot => {
+                        const targetSlot = slotsData.find(s => s.id === slot.slotId);
+                        if (targetSlot) {
+                            targetSlot.votes = targetSlot.votes || [];
+                            targetSlot.votes.push({
+                                participantId: participantId,
+                                name: name,
+                                start: slot.start,
+                                end: slot.end
+                            });
+                        }
+                    });
+                    return slotsData;
+                });
                 
-                document.getElementById('meetingTitle').value = '';
-                document.getElementById('organizerName').value = '';
-                currentMeetingSlots = [];
-                renderTimeSlots();
-                
-                alert('會議約定建立成功！請分享連結給其他人。');
+                alert('空檔提交成功！');
+                showResults();
             } catch (error) {
-                console.error('Error saving meeting:', error);
-                alert('儲存會議失敗，請檢查 Firebase 配置或網路連線');
+                console.error('Error submitting availability:', error);
+                alert('提交失敗，請稍後重試');
             }
         }
 
-        function copyLink() {
-            const shareUrl = document.getElementById('shareLink').textContent;
-            navigator.clipboard.writeText(shareUrl).then(() => {
-                alert('連結已複製到剪貼簿！');
-            }).catch(err => {
-                console.error('Failed to copy link:', err);
-                alert('複製連結失敗，請手動複製');
+        function showResults() {
+            document.getElementById('availabilitySection').style.display = 'none';
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            const code = getMeetingCodeFromUrl();
+            if (!db) {
+                showError('Firebase 未初始化，請檢查網路連線');
+                return;
+            }
+            
+            db.ref(`meetings/${code}/slots`).once('value').then(snapshot => {
+                const slots = snapshot.val() || [];
+                const tbody = document.querySelector('#resultsTable tbody');
+                tbody.innerHTML = '';
+                
+                slots.forEach(slot => {
+                    if (slot.votes && slot.votes.length > 0) {
+                        slot.votes.forEach(vote => {
+                            const row = document.createElement('tr');
+                            const timeCell = document.createElement('td');
+                            timeCell.textContent = slot.text;
+                            const nameCell = document.createElement('td');
+                            nameCell.textContent = `${vote.name} (${vote.start}-${vote.end} 分鐘)`;
+                            row.appendChild(timeCell);
+                            row.appendChild(nameCell);
+                            tbody.appendChild(row);
+                        });
+                    }
+                });
+                
+                if (tbody.innerHTML === '') {
+                    tbody.innerHTML = '<tr><td colspan="2" style="text-align: center;">尚未有投票結果</td></tr>';
+                }
+            }).catch(error => {
+                console.error('Error loading results:', error);
+                showError('載入結果失敗，請檢查網路連線');
             });
+        }
+
+        function showAvailabilityForm() {
+            document.getElementById('availabilitySection').style.display = 'block';
+            document.getElementById('resultsSection').style.display = 'none';
         }
 
         // 初始化
         window.addEventListener('DOMContentLoaded', () => {
-            console.log('DOM loaded, initializing time selector...');
-            renderTimeSlots();
-            
-            const tomorrow = new Date();
-            tomorrow.setDate(tomorrow.getDate() + 1);
-            const tomorrowStr = tomorrow.toISOString().split('T')[0];
-            document.getElementById('dateSelector').value = tomorrowStr;
-            
-            // 綁定時間選擇器事件
-            const startTimeSelect = document.getElementById('startTime');
-            const endTimeSelect = document.getElementById('endTime');
-            if (startTimeSelect && endTimeSelect) {
-                startTimeSelect.addEventListener('change', updateSelectedRange);
-                endTimeSelect.addEventListener('change', updateSelectedRange);
-                updateSelectedRange();
-            } else {
-                console.error('Time selector elements not found');
-                alert('時間選擇器載入失敗，請重新整理頁面');
-            }
+            console.log('DOM loaded, loading meeting...');
+            loadMeeting();
         });
     </script>
 </body>
